@@ -1,0 +1,1520 @@
+/*创建数据库
+**
+**
+*/
+create database ChenhrMIS01
+
+/*创建专业班级信息表
+**
+**
+*/
+create table Chenhr_专业班级01
+(chr_专业编号01 char(4) not null, 
+ chr_班级编号01 char(4) not null,
+ chr_专业名称01 char(20),
+ primary key(chr_专业编号01,chr_班级编号01))
+
+/*创建学生信息表
+**
+**
+*/
+create table Chenhr_学生01
+(chr_学号01 char(12) primary key,
+ chr_专业编号01 char(4),
+ chr_班级编号01 char(4),
+ chr_学生姓名01 char(20) not null,
+ chr_学生性别01 char(2) check(chr_学生性别01='男' or chr_学生性别01='女'),
+ chr_学生年龄01 int check(chr_学生年龄01 > 0 and chr_学生年龄01 < 99),
+ chr_生源所在省01 char(20),
+ chr_生源所在市01 char(20),
+ chr_已修学分总数01 int check(chr_已修学分总数01 >= 0),
+ constraint Class_Students foreign key(chr_专业编号01, chr_班级编号01) references Chenhr_专业班级01(chr_专业编号01, chr_班级编号01))
+
+/*创建教师信息表
+**
+**
+*/
+create table Chenhr_教师01
+(chr_教师编号01 char(12) primary key,
+ chr_教师姓名01 char(20) not null,
+ chr_教师性别01 char(2) check(chr_教师性别01 = '男' or chr_教师性别01 = '女'),
+ chr_教师年龄01 int, 
+ chr_职称01 char(8) check(chr_职称01 = '无职称' or chr_职称01 = '助教' or chr_职称01 = '副教授' or chr_职称01 = '教授'),
+ chr_联系电话01 char(12))
+
+/*创建课程信息表
+**
+**
+*/
+create table Chenhr_教师课程01
+(chr_课程编号01 char(12) not null,
+ chr_开课学年01 char(5) not null,
+ chr_开课学期01 char(5) not null,
+ chr_教师编号01 char(12) not null,
+ chr_课程名称01 char(20),
+ chr_学分01 int check(chr_学分01 > 0),
+ chr_考试或考查01 char(4) check(chr_考试或考查01 = '考试' or chr_考试或考查01 = '考查'),
+ chr_学时01 int check(chr_学时01 > 0)
+ primary key(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01)
+ constraint Teacher_Lesson foreign key(chr_教师编号01) references Chenhr_教师01(chr_教师编号01))
+
+/*创建学生成绩信息表
+**
+**
+*/
+create table Chenhr_上课01
+(chr_学号01 char(12),
+ chr_课程编号01 char(12),
+ chr_开课学年01 char(5),
+ chr_开课学期01 char(5),
+ chr_教师编号01 char(12),
+ chr_成绩01 int,
+ constraint Report_Lesson foreign key(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01) references Chenhr_教师课程01(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01),
+ constraint Report_Student foreign key(chr_学号01) references Chenhr_学生01(chr_学号01),
+ primary key(chr_学号01, chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01))
+
+/*创建课程开设信息表
+**
+**
+*/
+create table Chenhr_开课01
+(chr_专业编号01 char(4),
+ chr_班级编号01 char(4),
+ chr_课程编号01 char(12),
+ chr_开课学年01 char(5),
+ chr_开课学期01 char(5),
+ chr_教师编号01 char(12),
+ constraint Open_Lesson foreign key(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01) references Chenhr_教师课程01(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01),
+ constraint Open_Class foreign key(chr_专业编号01, chr_班级编号01) references Chenhr_专业班级01(chr_专业编号01, chr_班级编号01),
+ primary key(chr_专业编号01, chr_班级编号01, chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01))
+
+/*创建学生用户账号信息表
+**
+**
+*/
+create table Chenhr_学生登录01
+(chr_学生账号01 char(12) primary key,
+ chr_学生密码01 varchar(12) not null,
+ constraint Account_Student foreign key(chr_学生账号01) references Chenhr_学生01(chr_学号01))
+
+/*创建教师用户账号信息表
+**
+**
+*/
+create table Chenhr_教师登录01
+(chr_教师账号01 char(12) primary key,
+ chr_教师密码01 varchar(12) not null,
+ constraint Account_Teacher foreign key(chr_教师账号01) references Chenhr_教师01(chr_教师编号01))
+
+/*创建管理员账号信息表
+**
+**
+*/
+create table Chenhr_管理员登录01
+(chr_管理员账号01 char(12) primary key,
+ chr_管理员密码01 varchar(12) not null);
+insert into Chenhr_管理员登录01
+values('000000000000', '000000000000');
+
+/*创建课程平均成绩视图
+**
+**
+*/
+create view Chenhr_课程平均成绩01
+as
+select chr_课程名称01, Chenhr_教师课程01.chr_开课学年01, Chenhr_教师课程01.chr_开课学期01, Avg(chr_成绩01) chr_课程平均成绩01
+from Chenhr_上课01, Chenhr_教师课程01 
+where Chenhr_上课01.chr_课程编号01 = Chenhr_教师课程01.chr_课程编号01
+group by chr_课程名称01, Chenhr_教师课程01.chr_开课学年01, Chenhr_教师课程01.chr_开课学期01
+
+/*创建学生生源地省视图
+**
+**
+*/
+create view Chenhr_学生生源地省01
+as
+select chr_生源所在省01, count(chr_学号01) chr_学生数量01
+from Chenhr_学生01
+group by chr_生源所在省01;
+
+/*创建学生生源地市视图
+**
+**
+*/
+create view Chenhr_学生生源地市01
+as
+select chr_生源所在省01, chr_生源所在市01, count(chr_学号01) chr_学生数量01
+from Chenhr_学生01
+group by chr_生源所在市01;
+
+/*创建学生课表视图
+**
+**
+*/
+create view Chenhr_学生课表01 
+as
+select Chenhr_学生01.chr_学号01, chr_专业名称01, Chenhr_专业班级01.chr_班级编号01, Chenhr_教师课程01.chr_课程编号01, chr_课程名称01, chr_教师姓名01, Chenhr_开课01.chr_开课学年01, Chenhr_开课01.chr_开课学期01, chr_学时01, chr_考试或考查01, chr_学分01
+from Chenhr_学生01, Chenhr_教师01, Chenhr_教师课程01, Chenhr_开课01, Chenhr_专业班级01
+where Chenhr_学生01.chr_班级编号01 = Chenhr_专业班级01.chr_班级编号01
+  and Chenhr_学生01.chr_专业编号01 = Chenhr_专业班级01.chr_专业编号01
+  and Chenhr_教师01.chr_教师编号01 = Chenhr_教师课程01.chr_教师编号01
+  and Chenhr_教师课程01.chr_课程编号01 = Chenhr_开课01.chr_课程编号01
+  and Chenhr_教师课程01.chr_开课学期01 = Chenhr_开课01.chr_开课学期01
+  and Chenhr_教师课程01.chr_教师编号01 = Chenhr_开课01.chr_教师编号01
+  and Chenhr_专业班级01.chr_班级编号01 = Chenhr_开课01.chr_班级编号01
+  and Chenhr_专业班级01.chr_专业编号01 = Chenhr_开课01.chr_专业编号01
+
+/*创建教师课表视图
+**
+**
+*/
+create view Chenhr_教师课表01 
+as
+select  Chenhr_教师01.chr_教师编号01, chr_教师姓名01, chr_专业名称01, Chenhr_专业班级01.chr_班级编号01, Chenhr_教师课程01.chr_课程编号01, chr_课程名称01, Chenhr_开课01.chr_开课学年01, Chenhr_开课01.chr_开课学期01, chr_学时01, chr_考试或考查01, chr_学分01
+from Chenhr_教师01, Chenhr_教师课程01, Chenhr_开课01, Chenhr_专业班级01
+where Chenhr_教师01.chr_教师编号01 = Chenhr_教师课程01.chr_教师编号01
+  and Chenhr_教师课程01.chr_课程编号01 = Chenhr_开课01.chr_课程编号01
+  and Chenhr_教师课程01.chr_开课学期01 = Chenhr_开课01.chr_开课学期01
+  and Chenhr_教师课程01.chr_教师编号01 = Chenhr_开课01.chr_教师编号01
+  and Chenhr_专业班级01.chr_班级编号01 = Chenhr_开课01.chr_班级编号01
+  and Chenhr_专业班级01.chr_专业编号01 = Chenhr_开课01.chr_专业编号01
+
+/*创建学生成绩视图
+**
+**
+*/
+create view Chenhr_学生成绩01    
+as
+select Chenhr_学生01.chr_学号01, Chenhr_学生01.chr_学生姓名01, Chenhr_教师课程01.chr_课程名称01, chr_成绩01, chr_教师姓名01, Chenhr_上课01.chr_开课学年01, Chenhr_上课01.chr_开课学期01
+from Chenhr_上课01, Chenhr_学生01, Chenhr_教师01, Chenhr_教师课程01
+where Chenhr_上课01.chr_学号01 = Chenhr_学生01.chr_学号01 
+  and Chenhr_上课01.chr_开课学年01 = Chenhr_教师课程01.chr_开课学年01 
+  and Chenhr_上课01.chr_开课学期01 = Chenhr_教师课程01.chr_开课学期01
+  and Chenhr_上课01.chr_课程编号01 = Chenhr_教师课程01.chr_课程编号01
+  and Chenhr_上课01.chr_教师编号01 = Chenhr_教师课程01.chr_教师编号01
+  and Chenhr_上课01.chr_教师编号01 = Chenhr_教师01.chr_教师编号01;
+
+/*创建教师查学生成绩视图
+**
+**
+*/
+create view Chenhr_教师查学生成绩01
+as
+select Chenhr_学生01.chr_学号01, Chenhr_学生01.chr_学生姓名01, Chenhr_教师课程01.chr_教师编号01, Chenhr_教师课程01.chr_课程编号01, Chenhr_教师课程01.chr_课程名称01, Chenhr_专业班级01.chr_专业名称01, Chenhr_上课01.chr_开课学年01, Chenhr_上课01.chr_开课学期01, chr_成绩01
+from Chenhr_上课01, Chenhr_学生01, Chenhr_专业班级01, Chenhr_教师课程01
+where Chenhr_上课01.chr_学号01 = Chenhr_学生01.chr_学号01 
+  and Chenhr_上课01.chr_开课学年01 = Chenhr_教师课程01.chr_开课学年01 
+  and Chenhr_上课01.chr_开课学期01 = Chenhr_教师课程01.chr_开课学期01
+  and Chenhr_上课01.chr_课程编号01 = Chenhr_教师课程01.chr_课程编号01
+  and Chenhr_上课01.chr_教师编号01 = Chenhr_教师课程01.chr_教师编号01
+  and Chenhr_学生01.chr_班级编号01 = Chenhr_专业班级01.chr_班级编号01
+  and Chenhr_学生01.chr_专业编号01 = Chenhr_专业班级01.chr_专业编号01
+
+/*创建学分辅助视图
+**
+**
+*/
+create view Chenhr_学生总学分helper01
+as
+select chr_学号01, Chenhr_上课01.chr_开课学年01, Chenhr_上课01.chr_开课学期01, sum(chr_学分01) chr_学生总学分01
+from  Chenhr_上课01, Chenhr_教师课程01
+where Chenhr_教师课程01.chr_课程编号01 = Chenhr_上课01.chr_课程编号01
+  and Chenhr_教师课程01.chr_开课学年01 = Chenhr_上课01.chr_开课学年01
+  and Chenhr_教师课程01.chr_开课学期01 = Chenhr_上课01.chr_开课学期01
+  and Chenhr_教师课程01.chr_教师编号01 = Chenhr_上课01.chr_教师编号01
+  and Chenhr_上课01.chr_成绩01 >= 60
+group by chr_学号01, Chenhr_上课01.chr_开课学年01, Chenhr_上课01.chr_开课学期01
+
+/*创建学分视图
+**
+**
+*/
+create view Chenhr_学生总学分01
+as
+select Chenhr_学生01.chr_学号01, chr_学生姓名01, Chenhr_学生总学分helper01.chr_开课学年01, Chenhr_学生总学分helper01.chr_开课学期01, chr_学生总学分01
+from  Chenhr_学生01, Chenhr_学生总学分helper01
+where Chenhr_学生01.chr_学号01 = Chenhr_学生总学分helper01.chr_学号01
+
+/*创建绩点排名视图
+**
+**
+*/
+create view Chenhr_绩点排名01
+as
+select Chenhr_上课01.chr_学号01, chr_学生姓名01, chr_专业名称01, Chenhr_专业班级01.chr_班级编号01, Chenhr_上课01.chr_开课学年01, sum(chr_学分01*(chr_成绩01-50)/10.0)/sum(chr_学分01) as chr_绩点01
+  from Chenhr_教师课程01, Chenhr_上课01, Chenhr_开课01, Chenhr_学生01, Chenhr_专业班级01
+  where Chenhr_上课01.chr_课程编号01 = Chenhr_教师课程01.chr_课程编号01
+	and Chenhr_上课01.chr_教师编号01 = Chenhr_教师课程01.chr_教师编号01
+	and Chenhr_上课01.chr_开课学年01 = Chenhr_教师课程01.chr_开课学年01
+    and Chenhr_上课01.chr_开课学期01 = Chenhr_教师课程01.chr_开课学期01
+	and Chenhr_上课01.chr_课程编号01 = Chenhr_开课01.chr_课程编号01
+	and Chenhr_上课01.chr_教师编号01 = Chenhr_开课01.chr_教师编号01
+	and Chenhr_上课01.chr_开课学年01 = Chenhr_开课01.chr_开课学年01
+    and Chenhr_上课01.chr_开课学期01 = Chenhr_开课01.chr_开课学期01
+	and Chenhr_学生01.chr_专业编号01 = Chenhr_开课01.chr_专业编号01
+	and Chenhr_上课01.chr_学号01 = Chenhr_学生01.chr_学号01
+    and Chenhr_专业班级01.chr_专业编号01 = Chenhr_开课01.chr_专业编号01
+	and Chenhr_专业班级01.chr_班级编号01 = Chenhr_学生01.chr_班级编号01
+	and Chenhr_专业班级01.chr_班级编号01 = Chenhr_开课01.chr_班级编号01
+  group by Chenhr_上课01.chr_学号01, chr_学生姓名01, chr_专业名称01, Chenhr_专业班级01.chr_班级编号01, Chenhr_上课01.chr_开课学年01
+  order by chr_绩点01 desc
+
+/*创建索引
+**
+**
+*/
+create index chr_教师课程_学分_index01 on Chenhr_教师课程01(chr_学分01 ASC)
+create index chr_上课_成绩_index01 on Chenhr_上课01(chr_成绩01 ASC)
+create index chr_学生_专业编号_index01 on Chenhr_学生01(chr_专业编号01 ASC)
+create index chr_学生_班级编号_index01 on Chenhr_学生01(chr_班级编号01 ASC)
+
+/*修改外键约束
+**
+**
+*/
+alter table Chenhr_上课01 drop constraint Report_Lesson;
+alter table Chenhr_上课01 add constraint Report_Lesson foreign key(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01) 
+references Chenhr_教师课程01(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01) on update cascade on delete cascade
+
+alter table Chenhr_上课01 drop constraint Report_Lesson;
+alter table Chenhr_上课01 add constraint Report_Lesson foreign key(chr_学号01) 
+references Chenhr_学生01(chr_学号01) on update cascade on delete cascade
+
+alter table Chenhr_开课01 drop constraint Open_Lesson;
+alter table Chenhr_开课01 add constraint Open_Lesson foreign key(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01) 
+references Chenhr_教师课程01(chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01) on update cascade on delete cascade
+
+alter table Chenhr_学生登录01 drop constraint Account_Student;
+alter table Chenhr_学生登录01 add constraint Account_Student foreign key(chr_学生账号01) 
+references Chenhr_学生01(chr_学号01) on update cascade on delete cascade
+
+alter table Chenhr_教师登录01 drop constraint Account_Teacher;
+alter table Chenhr_教师登录01 add constraint Account_Teacher foreign key(chr_教师账号01) 
+references Chenhr_教师01(chr_教师编号01) on update cascade on delete cascade
+
+/*学分统计
+**
+**
+*/
+create trigger chr_学分统计01 on Chenhr_上课01
+for update, insert
+as
+update Chenhr_学生01
+set chr_已修学分总数01 = 
+(select sum(chr_学分01) from Chenhr_教师课程01,Chenhr_上课01 
+ where chr_学号01 = (select chr_学号01 from inserted)
+ and Chenhr_教师课程01.chr_课程编号01 = Chenhr_上课01.chr_课程编号01
+ and Chenhr_教师课程01.chr_开课学年01 = Chenhr_上课01.chr_开课学年01
+ and Chenhr_教师课程01.chr_开课学期01 = Chenhr_上课01.chr_开课学期01
+ and Chenhr_教师课程01.chr_教师编号01 = Chenhr_上课01.chr_教师编号01
+ and chr_成绩01 >= 60 )
+ where chr_学号01 = (select chr_学号01 from inserted)
+
+/*增加学生账号
+**
+**
+*/
+create trigger chr_增加学生账号01 on Chenhr_学生01
+for insert
+as
+  insert into Chenhr_学生登录01
+  select chr_学号01, chr_学号01
+  from inserted
+
+/*增加教师账号
+**
+**
+*/
+create trigger chr_增加教师账号01 on Chenhr_教师01
+for insert
+as
+  insert into Chenhr_教师登录01
+  select chr_教师编号01, chr_教师编号01
+  from inserted
+
+/*新增选课
+**
+**
+*/
+create trigger chr_新增选课01 on Chenhr_开课01
+for insert
+as
+  insert into Chenhr_上课01
+  select chr_学号01, chr_课程编号01, chr_开课学年01, chr_开课学期01, chr_教师编号01, null
+  from inserted, Chenhr_学生01
+  where Chenhr_学生01.chr_专业编号01 = inserted.chr_专业编号01
+	and Chenhr_学生01.chr_班级编号01 = inserted.chr_班级编号01
+
+/*学年绩点排名
+**
+**
+*/
+create procedure chr_学年绩点排名sp01
+@chr_学号01 char,
+@chr_学年01 char
+as
+begin
+  select Chenhr_上课01.chr_学号01, chr_学生姓名01, chr_专业名称01, Chenhr_专业班级01.chr_班级编号01, Chenhr_上课01.chr_开课学年01, sum(chr_学分01*(chr_成绩01-50)/10.0)/sum(chr_学分01) as chr_绩点01
+  from Chenhr_教师课程01, Chenhr_上课01, Chenhr_开课01, Chenhr_学生01, Chenhr_专业班级01
+  where Chenhr_上课01.chr_课程编号01 = Chenhr_教师课程01.chr_课程编号01
+	and Chenhr_上课01.chr_教师编号01 = Chenhr_教师课程01.chr_教师编号01
+	and Chenhr_上课01.chr_开课学年01 = Chenhr_教师课程01.chr_开课学年01
+    and Chenhr_上课01.chr_开课学期01 = Chenhr_教师课程01.chr_开课学期01
+	and Chenhr_上课01.chr_课程编号01 = Chenhr_开课01.chr_课程编号01
+	and Chenhr_上课01.chr_教师编号01 = Chenhr_开课01.chr_教师编号01
+	and Chenhr_上课01.chr_开课学年01 = Chenhr_开课01.chr_开课学年01
+    and Chenhr_上课01.chr_开课学期01 = Chenhr_开课01.chr_开课学期01
+	and Chenhr_学生01.chr_专业编号01 = Chenhr_开课01.chr_专业编号01
+	and @chr_学号01 = Chenhr_学生01.chr_学号01
+    and @chr_学年01 = Chenhr_上课01.chr_开课学年01
+  group by Chenhr_上课01.chr_学号01, chr_学生姓名01, chr_专业名称01, Chenhr_专业班级01.chr_班级编号01, Chenhr_上课01.chr_开课学年01
+  order by chr_绩点01 desc
+end
+/*调用*/
+exec chr_学年绩点排名sp01 @chr_学号01='201906010101', @chr_学年01='2020'
+
+/*删除学分达标（毕业）的学生
+**
+**
+*/
+create procedure chr_毕业sp01
+@chr_最低学分01 int
+as
+  declare @chr_sno char(30)
+  declare chr_cur cursor for
+  select chr_学号01 from Chenhr_学生01 where chr_已修学分总数01 >= @chr_最低学分01
+  open chr_cur
+  fetch chr_cur into @chr_sno
+  while @@FETCH_STATUS = 0
+begin
+  delete from Chenhr_学生01 where chr_学号01 = @chr_sno
+  close chr_cur
+  open chr_cur
+  fetch chr_cur into @chr_sno
+end
+  close chr_cur
+  deallocate chr_cur
+
+/*导入专业班级信息表
+**
+**
+*/
+insert into Chenhr_专业班级01 values
+ ('0601', '01', '大数据'),
+ ('0601', '02', '大数据'),
+ ('0602', '01', '软件工程'),
+ ('0602', '02', '软件工程'),
+ ('0602', '03', '软件工程'),
+ ('0603', '01', '计算机科学与技术'),
+ ('0603', '02', '计算机科学与技术'),
+ ('0603', '03', '计算机科学与技术'),
+ ('0604', '01', '物联网'),
+ ('0605', '01', '网络工程')
+
+/*导入学生信息表
+**
+**
+*/
+insert into Chenhr_学生01 values
+('201906010101', '0601', '01', 'S21', '女', '20', '北京', '朝阳区', null),  
+('201906010102', '0601', '01', 'S22', '女', '20', '浙江', '宁波市', null),      
+('201906010103', '0601', '01', 'S23', '女', '20', '浙江', '温州市', null),      
+('201906010104', '0601', '01', 'S24', '女', '20', '江苏', '南京市', null),      
+('201906010105', '0601', '01', 'S25', '男', '20', '上海', '金山区', null),
+('201906010106', '0601', '01', 'S26', '女', '20', '北京', '朝阳区', null),  
+('201906010107', '0601', '01', 'S27', '男', '20', '江苏', '苏州市', null),
+('201906010201', '0601', '02', 'S28', '女', '20', '浙江', '杭州市', null),
+('201906010202', '0601', '02', 'S29', '女', '20', '北京', '通州区', null),
+('201906010203', '0601', '02', 'S30', '女', '20', '上海', '松江区', null),
+('201906010204', '0601', '02', 'S31', '女', '20', '江苏', '南京市', null),
+('201906010205', '0601', '02', 'S32', '男', '20', '江苏', '南京市', null),
+('201906010206', '0601', '02', 'S33', '女', '20', '北京', '通州区', null),
+('201906010207', '0601', '02', 'S34', '女', '20', '上海', '金山区', null),
+('201906020101', '0602', '01', 'S35', '女', '20', '北京', '海淀区', null),
+('201906020102', '0602', '01', 'S36', '女', '20', '江苏', '苏州市', null),
+('201906020103', '0602', '01', 'S37', '男', '20', '北京', '朝阳区', null),
+('201906020104', '0602', '01', 'S38', '女', '20', '浙江', '杭州市', null),
+('201906020105', '0602', '01', 'S39', '女', '20', '上海', '金山区', null),
+('201906020106', '0602', '01', 'S40', '女', '20', '北京', '海淀区', null),
+('201906020107', '0602', '01', 'S41', '女', '20', '浙江', '杭州市', null),
+('201906020201', '0602', '02', 'S42', '男', '20', '浙江', '宁波市', null),
+('201906020202', '0602', '02', 'S43', '女', '20', '江苏', '苏州市', null),
+('201906020203', '0602', '02', 'S44', '男', '20', '上海', '松江区', null),
+('201906020204', '0602', '02', 'S45', '男', '20', '浙江', '温州市', null),
+('201906020205', '0602', '02', 'S46', '男', '20', '北京', '通州区', null),
+('201906020206', '0602', '02', 'S47', '男', '20', '上海', '宝山区', null),
+('201906020207', '0602', '02', 'S48', '女', '20', '浙江', '宁波市', null),
+('201906020301', '0602', '03', 'S49', '女', '20', '北京', '海淀区', null),
+('201906020302', '0602', '03', 'S50', '男', '20', '浙江', '嘉兴市', null),
+('201906020303', '0602', '03', 'S51', '男', '20', '北京', '海淀区', null),
+('201906020304', '0602', '03', 'S52', '女', '20', '江苏', '南京市', null),
+('201906020305', '0602', '03', 'S53', '女', '20', '浙江', '宁波市', null),
+('201906020306', '0602', '03', 'S54', '女', '20', '北京', '朝阳区', null),
+('201906020307', '0602', '03', 'S55', '女', '20', '上海', '金山区', null),
+('201906030101', '0603', '01', 'S56', '女', '20', '上海', '宝山区', null),
+('201906030102', '0603', '01', 'S57', '女', '20', '江苏', '南京市', null),
+('201906030103', '0603', '01', 'S58', '女', '20', '浙江', '宁波市', null),
+('201906030104', '0603', '01', 'S59', '男', '20', '浙江', '嘉兴市', null),
+('201906030105', '0603', '01', 'S60', '女', '20', '浙江', '温州市', null),
+('201906030106', '0603', '01', 'S61', '女', '20', '浙江', '温州市', null),
+('201906030107', '0603', '01', 'S62', '男', '20', '浙江', '嘉兴市', null),
+('201906030201', '0603', '02', 'S63', '女', '20', '江苏', '苏州市', null),
+('201906030202', '0603', '02', 'S64', '女', '20', '浙江', '杭州市', null),
+('201906030203', '0603', '02', 'S65', '女', '20', '北京', '海淀区', null),
+('201906030204', '0603', '02', 'S66', '男', '20', '上海', '金山区', null),
+('201906030205', '0603', '02', 'S67', '女', '20', '北京', '通州区', null),
+('201906030206', '0603', '02', 'S68', '女', '20', '浙江', '嘉兴市', null),
+('201906030207', '0603', '02', 'S69', '女', '20', '江苏', '南京市', null),
+('201906030301', '0603', '03', 'S70', '男', '20', '北京', '通州区', null),
+('201906030302', '0603', '03', 'S71', '女', '20', '北京', '海淀区', null),
+('201906030303', '0603', '03', 'S72', '女', '20', '北京', '朝阳区', null),
+('201906030304', '0603', '03', 'S73', '男', '20', '浙江', '宁波市', null),
+('201906030305', '0603', '03', 'S74', '女', '20', '北京', '朝阳区', null),
+('201906030306', '0603', '03', 'S75', '男', '20', '江苏', '南京市', null),
+('201906030307', '0603', '03', 'S76', '男', '20', '上海', '宝山区', null),
+('201906040101', '0604', '01', 'S77', '女', '20', '上海', '金山区', null),
+('201906040102', '0604', '01', 'S78', '男', '20', '上海', '宝山区', null),
+('201906040103', '0604', '01', 'S79', '男', '20', '江苏', '南京市', null),
+('201906040104', '0604', '01', 'S80', '女', '20', '浙江', '温州市', null),
+('201906040105', '0604', '01', 'S81', '男', '20', '浙江', '温州市', null),
+('201906040106', '0604', '01', 'S82', '女', '20', '浙江', '嘉兴市', null),
+('201906040107', '0604', '01', 'S83', '女', '20', '江苏', '苏州市', null),
+('201906050101', '0605', '01', 'S84', '男', '20', '上海', '宝山区', null),
+('201906050102', '0605', '01', 'S85', '男', '20', '浙江', '宁波市', null),
+('201906050103', '0605', '01', 'S86', '男', '20', '江苏', '苏州市', null),
+('201906050104', '0605', '01', 'S87', '女', '20', '江苏', '苏州市', null),
+('201906050105', '0605', '01', 'S88', '女', '20', '上海', '宝山区', null),
+('201906050106', '0605', '01', 'S89', '男', '20', '上海', '金山区', null),
+('201906050107', '0605', '01', 'S90', '男', '20', '北京', '海淀区', null)
+
+/*导入教师信息表
+**
+**
+*/
+insert into Chenhr_教师01 values
+('000000000001', 'T01', '女', '46', '助教', '51419081114'),
+('000000000002', 'T02', '男', '63', '教授', '14915914811'),
+('000000000003', 'T03', '男', '44', '副教授', '14191851491'),
+('000000000004', 'T04', '女', '58', '教授', '98145119011'),
+('000000000005', 'T05', '女', '39', '副教授', '19045181911'),
+('000000000006', 'T06', '男', '50', '无职称', '95114089114'),
+('000000000007', 'T07', '男', '55', '助教', '14510941911')
+
+/*导入课程信息表
+**
+**
+*/
+insert into Chenhr_教师课程01 values
+ ('C01', '2020', '2', '000000000001', '数据库原理及其应用', 3, '考试', 48),
+ ('C01', '2020', '2', '000000000002', '数据库原理及其应用', 3, '考试', 48),
+ ('C02', '2020', '2', '000000000002', '算法设计与分析', 3, '考试', 48),
+ ('C02', '2020', '2', '000000000003', '算法设计与分析', 3, '考试', 48),
+ ('C02', '2020', '2', '000000000004', '算法设计与分析', 3, '考试', 48),
+ ('C03', '2020', '2', '000000000005', '人工智能导论', 3, '考查', 48),
+ ('C03', '2020', '2', '000000000006', '人工智能导论', 3, '考查', 48),
+ ('C04', '2020', '2', '000000000005', '数据挖掘', 4, '考试', 64),
+ ('C05', '2020', '1', '000000000001', '计算机网络原理', 3, '考试', 48),
+ ('C05', '2020', '1', '000000000007', '计算机网络原理', 3, '考试', 48),
+ ('C06', '2020', '1', '000000000002', '数据结构', 4, '考试', 64),
+ ('C06', '2020', '1', '000000000003', '数据结构', 4, '考试', 64)
+
+/*导入开课信息表
+**
+**
+*/
+insert into Chenhr_开课01 values
+('0601', '01', 'C01', '2020', '2', '000000000002'),
+('0601', '01', 'C02', '2020', '2', '000000000002'),
+('0601', '01', 'C04', '2020', '2', '000000000005'),
+('0601', '01', 'C05', '2020', '1', '000000000001'),
+('0601', '01', 'C06', '2020', '1', '000000000003'),
+('0601', '02', 'C01', '2020', '2', '000000000002'),
+('0601', '02', 'C02', '2020', '2', '000000000002'),
+('0601', '02', 'C04', '2020', '2', '000000000005'),
+('0601', '02', 'C05', '2020', '1', '000000000007'),
+('0601', '02', 'C06', '2020', '1', '000000000002'),
+('0602', '01', 'C01', '2020', '2', '000000000001'),
+('0602', '01', 'C02', '2020', '2', '000000000004'),
+('0602', '01', 'C03', '2020', '2', '000000000005'),
+('0602', '01', 'C06', '2020', '1', '000000000003'),
+('0602', '02', 'C01', '2020', '2', '000000000001'),
+('0602', '02', 'C02', '2020', '2', '000000000002'),
+('0602', '02', 'C03', '2020', '2', '000000000005'),
+('0602', '02', 'C06', '2020', '1', '000000000002'),
+('0602', '03', 'C01', '2020', '2', '000000000001'),
+('0602', '03', 'C02', '2020', '2', '000000000002'),
+('0602', '03', 'C03', '2020', '2', '000000000006'),
+('0602', '03', 'C06', '2020', '1', '000000000003'),
+('0603', '01', 'C01', '2020', '2', '000000000002'),
+('0603', '01', 'C02', '2020', '2', '000000000003'),
+('0603', '01', 'C03', '2020', '2', '000000000005'),
+('0603', '01', 'C05', '2020', '1', '000000000001'),
+('0603', '01', 'C06', '2020', '1', '000000000003'),
+('0603', '02', 'C01', '2020', '2', '000000000001'),
+('0603', '02', 'C02', '2020', '2', '000000000003'),
+('0603', '02', 'C03', '2020', '2', '000000000005'),
+('0603', '02', 'C05', '2020', '1', '000000000001'),
+('0603', '02', 'C06', '2020', '1', '000000000002'),
+('0603', '03', 'C01', '2020', '2', '000000000001'),
+('0603', '03', 'C02', '2020', '2', '000000000002'),
+('0603', '03', 'C03', '2020', '2', '000000000006'),
+('0603', '03', 'C05', '2020', '1', '000000000001'),
+('0603', '03', 'C06', '2020', '1', '000000000002'),
+('0604', '01', 'C01', '2020', '2', '000000000001'),
+('0604', '01', 'C03', '2020', '2', '000000000005'),
+('0604', '01', 'C05', '2020', '1', '000000000001'),
+('0604', '01', 'C06', '2020', '1', '000000000002'),
+('0605', '01', 'C01', '2020', '2', '000000000001'),
+('0605', '01', 'C03', '2020', '2', '000000000005'),
+('0605', '01', 'C05', '2020', '1', '000000000001'),
+('0605', '01', 'C06', '2020', '1', '000000000002')
+
+/*导入成绩信息
+**
+**
+*/
+Update Chenhr_上课01 
+ set chr_成绩01 = 54 
+where chr_学号01 = '201906010101' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906010101' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906010101' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 50
+where chr_学号01 = '201906010101' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906010101' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 81
+where chr_学号01 = '201906010102' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906010102' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906010102' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906010102' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906010102' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 58
+where chr_学号01 = '201906010103' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 99
+where chr_学号01 = '201906010103' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906010103' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 92
+where chr_学号01 = '201906010103' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906010103' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01 
+ set chr_成绩01 = 85
+where chr_学号01 = '201906010104' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 96
+where chr_学号01 = '201906010104' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 89
+where chr_学号01 = '201906010104' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906010104' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 98
+where chr_学号01 = '201906010104' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 66
+where chr_学号01 = '201906010105' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 61
+where chr_学号01 = '201906010105' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 77
+where chr_学号01 = '201906010105' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906010105' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 80
+where chr_学号01 = '201906010105' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 75
+where chr_学号01 = '201906010106' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 66
+where chr_学号01 = '201906010106' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906010106' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906010106' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906010106' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906010107' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 94
+where chr_学号01 = '201906010107' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 81
+where chr_学号01 = '201906010107' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 88
+where chr_学号01 = '201906010107' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 62
+where chr_学号01 = '201906010107' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906010201' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 96
+where chr_学号01 = '201906010201' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906010201' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906010201' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01 
+ set chr_成绩01 = 85
+where chr_学号01 = '201906010201' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 54
+where chr_学号01 = '201906010202' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906010202' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 60
+where chr_学号01 = '201906010202' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 68
+where chr_学号01 = '201906010202' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 67
+where chr_学号01 = '201906010202' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906010203' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906010203' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906010203' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906010203' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906010203' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 60
+where chr_学号01 = '201906010204' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 94
+where chr_学号01 = '201906010204' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 62
+where chr_学号01 = '201906010204' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906010204' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 86
+where chr_学号01 = '201906010204' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906010205' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906010205' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906010205' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906010205' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906010205' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01 
+ set chr_成绩01 = 76
+where chr_学号01 = '201906010206' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906010206' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906010206' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 96
+where chr_学号01 = '201906010206' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 60
+where chr_学号01 = '201906010206' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 50
+where chr_学号01 = '201906010207' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 86
+where chr_学号01 = '201906010207' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 87
+where chr_学号01 = '201906010207' and chr_课程编号01 = 'C04' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 73
+where chr_学号01 = '201906010207' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906010207' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 89
+where chr_学号01 = '201906020101' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906020101' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020101' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906020101' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906020102' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 80
+where chr_学号01 = '201906020102' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906020102' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906020102' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020103' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 93
+where chr_学号01 = '201906020103' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906020103' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906020103' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906020104' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906020104' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 87
+where chr_学号01 = '201906020104' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 51
+where chr_学号01 = '201906020104' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906020105' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 75
+where chr_学号01 = '201906020105' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906020105' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020105' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906020106' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906020106' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020106' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 68
+where chr_学号01 = '201906020106' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 74
+where chr_学号01 = '201906020107' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 91
+where chr_学号01 = '201906020107' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906020107' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906020107' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906020201' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906020201' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906020201' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 77
+where chr_学号01 = '201906020201' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 54
+where chr_学号01 = '201906020202' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906020202' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906020202' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906020202' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 86
+where chr_学号01 = '201906020203' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020203' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906020203' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 60
+where chr_学号01 = '201906020203' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 80
+where chr_学号01 = '201906020204' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906020204' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 81
+where chr_学号01 = '201906020204' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 91
+where chr_学号01 = '201906020204' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 99
+where chr_学号01 = '201906020205' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906020205' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 98
+where chr_学号01 = '201906020205' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 67
+where chr_学号01 = '201906020205' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906020206' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906020206' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906020206' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020206' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906020207' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 75
+where chr_学号01 = '201906020207' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 74
+where chr_学号01 = '201906020207' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906020207' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906020301' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906020301' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 73
+where chr_学号01 = '201906020301' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 62
+where chr_学号01 = '201906020301' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 89
+where chr_学号01 = '201906020302' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906020302' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 92
+where chr_学号01 = '201906020302' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906020302' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906020303' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906020303' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 70
+where chr_学号01 = '201906020303' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906020303' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 68
+where chr_学号01 = '201906020304' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906020304' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 50
+where chr_学号01 = '201906020304' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906020304' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 74
+where chr_学号01 = '201906020305' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906020305' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 74
+where chr_学号01 = '201906020305' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906020305' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 50
+where chr_学号01 = '201906020306' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906020306' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906020306' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906020306' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01 
+ set chr_成绩01 = 56
+where chr_学号01 = '201906020307' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906020307' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 66
+where chr_学号01 = '201906020307' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01 
+ set chr_成绩01 = 90
+where chr_学号01 = '201906020307' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 87
+where chr_学号01 = '201906030101' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 70
+where chr_学号01 = '201906030101' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906030101' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906030101' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906030101' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906030102' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 87
+where chr_学号01 = '201906030102' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 59
+where chr_学号01 = '201906030102' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906030102' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906030102' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906030103' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906030103' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 67
+where chr_学号01 = '201906030103' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906030103' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906030103' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 96
+where chr_学号01 = '201906030104' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 96
+where chr_学号01 = '201906030104' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 61
+where chr_学号01 = '201906030104' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906030104' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 66
+where chr_学号01 = '201906030104' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906030105' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 94
+where chr_学号01 = '201906030105' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906030105' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906030105' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 60
+where chr_学号01 = '201906030105' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 99
+where chr_学号01 = '201906030106' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906030106' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 68
+where chr_学号01 = '201906030106' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906030106' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 58
+where chr_学号01 = '201906030106' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 70
+where chr_学号01 = '201906030107' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 74
+where chr_学号01 = '201906030107' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906030107' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906030107' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906030107' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906030201' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906030201' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 92
+where chr_学号01 = '201906030201' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906030201' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906030201' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906030202' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 59
+where chr_学号01 = '201906030202' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906030202' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 74
+where chr_学号01 = '201906030202' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 62
+where chr_学号01 = '201906030202' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 58
+where chr_学号01 = '201906030203' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906030203' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 83
+where chr_学号01 = '201906030203' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906030203' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 86
+where chr_学号01 = '201906030203' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906030204' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906030204' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906030204' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906030204' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906030204' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906030205' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 87
+where chr_学号01 = '201906030205' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906030205' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 95
+where chr_学号01 = '201906030205' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 64
+where chr_学号01 = '201906030205' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 61
+where chr_学号01 = '201906030206' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906030206' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906030206' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 68
+where chr_学号01 = '201906030206' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 81
+where chr_学号01 = '201906030206' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 97
+where chr_学号01 = '201906030207' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906030207' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 54
+where chr_学号01 = '201906030207' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906030207' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 80
+where chr_学号01 = '201906030207' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906030301' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 91
+where chr_学号01 = '201906030301' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 51
+where chr_学号01 = '201906030301' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 79
+where chr_学号01 = '201906030301' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 87
+where chr_学号01 = '201906030301' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906030302' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906030302' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906030302' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 51
+where chr_学号01 = '201906030302' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906030302' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 99
+where chr_学号01 = '201906030303' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 98
+where chr_学号01 = '201906030303' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906030303' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906030303' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 94
+where chr_学号01 = '201906030303' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 58
+where chr_学号01 = '201906030304' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 72
+where chr_学号01 = '201906030304' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 92
+where chr_学号01 = '201906030304' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 67
+where chr_学号01 = '201906030304' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 62
+where chr_学号01 = '201906030304' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906030305' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 94
+where chr_学号01 = '201906030305' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 92
+where chr_学号01 = '201906030305' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906030305' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 86
+where chr_学号01 = '201906030305' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 93
+where chr_学号01 = '201906030306' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 85
+where chr_学号01 = '201906030306' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906030306' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906030306' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906030306' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906030307' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 99
+where chr_学号01 = '201906030307' and chr_课程编号01 = 'C02' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 59
+where chr_学号01 = '201906030307' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 75
+where chr_学号01 = '201906030307' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906030307' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906040101' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 86
+where chr_学号01 = '201906040101' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 51
+where chr_学号01 = '201906040101' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906040101' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 54
+where chr_学号01 = '201906040102' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906040102' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906040102' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 100
+where chr_学号01 = '201906040102' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906040103' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906040103' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906040103' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 53
+where chr_学号01 = '201906040103' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 88
+where chr_学号01 = '201906040104' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906040104' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906040104' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906040104' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906040105' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 59
+where chr_学号01 = '201906040105' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 63
+where chr_学号01 = '201906040105' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 58
+where chr_学号01 = '201906040105' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 92
+where chr_学号01 = '201906040106' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 71
+where chr_学号01 = '201906040106' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906040106' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 94
+where chr_学号01 = '201906040106' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 81
+where chr_学号01 = '201906040107' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 93
+where chr_学号01 = '201906040107' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 75
+where chr_学号01 = '201906040107' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 76
+where chr_学号01 = '201906040107' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 90
+where chr_学号01 = '201906050101' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906050101' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906050101' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 66
+where chr_学号01 = '201906050101' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 93
+where chr_学号01 = '201906050102' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 69
+where chr_学号01 = '201906050102' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906050102' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 81
+where chr_学号01 = '201906050102' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906050103' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 82
+where chr_学号01 = '201906050103' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 88
+where chr_学号01 = '201906050103' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 91
+where chr_学号01 = '201906050103' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 54
+where chr_学号01 = '201906050104' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 84
+where chr_学号01 = '201906050104' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 73
+where chr_学号01 = '201906050104' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906050104' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 56
+where chr_学号01 = '201906050105' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 65
+where chr_学号01 = '201906050105' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 98
+where chr_学号01 = '201906050105' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 58
+where chr_学号01 = '201906050105' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 91
+where chr_学号01 = '201906050106' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 55
+where chr_学号01 = '201906050106' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 98
+where chr_学号01 = '201906050106' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 57
+where chr_学号01 = '201906050106' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 51
+where chr_学号01 = '201906050107' and chr_课程编号01 = 'C01' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 68
+where chr_学号01 = '201906050107' and chr_课程编号01 = 'C03' and chr_开课学年01 = '2020' and chr_开课学期01 = '2'
+Update Chenhr_上课01
+ set chr_成绩01 = 52
+where chr_学号01 = '201906050107' and chr_课程编号01 = 'C05' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
+Update Chenhr_上课01
+ set chr_成绩01 = 78
+where chr_学号01 = '201906050107' and chr_课程编号01 = 'C06' and chr_开课学年01 = '2020' and chr_开课学期01 = '1'
